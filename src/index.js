@@ -23,6 +23,7 @@ program
   .option('-t, --temp [location]', 'Directory for temp file')
   .option('--bo, --build-once', 'Build once only, do not watch')
   .option('-l, --locals <json>', 'Json locals for pug rendering')
+  .option('-v, --values <value>',"value file")
   .option('--basedir <location>', 'Base directory for absolute paths, e.g. /')
 
   .action(function (inp, out) {
@@ -80,13 +81,24 @@ if (program.watch) {
   watchLocations = watchLocations.concat(program.watch)
 }
 
-let locals
+var locals = {}
 if (program.locals) {
   try {
     locals = JSON.parse(program.locals)
   } catch (e) {
     console.error(e)
     colors.red('ReLaXed error: Could not parse locals JSON, see above.')
+  }
+}
+
+if (program.values){
+  try {
+    console.log(colors.magenta(`... Loading Value file ${program.values}`))
+    var data = fs.readFileSync(program.values,'utf8')
+    Object.assign(locals,yaml.safeLoad(data))
+  } catch (e){
+    console.error(e)
+    colors.red(`Fail to read value file ${program.values}`)
   }
 }
 
@@ -118,7 +130,7 @@ const relaxedGlobals = {
 
 var updateConfig = async function () {
   if (configPath) {
-    console.log(colors.magenta('... Reading config file'))
+    console.log(colors.magenta('... Reading config file ' + configPath))
     var data = fs.readFileSync(configPath, 'utf8')
     if (configPath.endsWith('.json')) {
       relaxedGlobals.config = JSON.parse(data)
@@ -147,6 +159,12 @@ async function main () {
   }).on('error', function (err) {
     console.log(colors.red('Error: ' + err.toString()))
   })
+
+  if(relaxedGlobals.config.view){
+    
+    var view = Object.assign({width: 800, height:600 },relaxedGlobals.config.view)
+    await relaxedGlobals.puppeteerPage.setViewport(view)
+  }
 
   await build(inputPath)
 

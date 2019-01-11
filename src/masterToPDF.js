@@ -24,8 +24,8 @@ exports.masterToPDF = async function (masterPath, relaxedGlobals, tempHTMLPath, 
     var pugFilters = Object.assign(...pluginHooks.pugFilters.map(o => o.instance))
     try {
       var masterPug = fs.readFileSync(masterPath, 'utf8')
-
-      html = pug.render(pluginPugHeaders + '\n' + masterPug, Object.assign({}, locals ? locals : {}, {
+      global.data = Object.assign({}, locals ? locals : {});
+      html = pug.render(pluginPugHeaders + '\n' + masterPug, Object.assign({
         filename: masterPath,
         fs: fs,
         basedir: relaxedGlobals.basedir,
@@ -35,7 +35,7 @@ exports.masterToPDF = async function (masterPath, relaxedGlobals, tempHTMLPath, 
         require: require,
         performance: performance,
         filters: pugFilters
-      }))
+      },global.data))
     } catch (error) {
       console.log(error.message)
       console.error(colors.red('There was a Pug error (see above)'))
@@ -103,6 +103,8 @@ exports.masterToPDF = async function (masterPath, relaxedGlobals, tempHTMLPath, 
     printBackground: true
   }
 
+  options = Object.assign(options,relaxedGlobals.config.pdfOptions)
+
   function getMatch (string, query) {
     var result = string.match(query)
     if (result) {
@@ -137,6 +139,9 @@ exports.masterToPDF = async function (masterPath, relaxedGlobals, tempHTMLPath, 
   /*
    *            PRINT PAGE TO PDF
    */
+
+  console.log("final pdf options")
+  console.log(options)
   await page.pdf(options)
 
   var tPDF = performance.now()
