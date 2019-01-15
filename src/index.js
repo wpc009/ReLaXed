@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 
 const colors = require('colors/safe')
-const program = require('commander')
 const chokidar = require('chokidar')
 const puppeteer = require('puppeteer')
 const yaml = require('js-yaml')
@@ -10,6 +9,7 @@ const path = require('path')
 const fs = require('fs')
 const plugins = require('./plugins')
 const { masterToPDF } = require('./masterToPDF.js')
+global.program = require('commander')
 
 var input, output
 const version = require('../package.json').version
