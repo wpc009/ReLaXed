@@ -7,8 +7,7 @@ const yaml = require('js-yaml')
 const { performance } = require('perf_hooks')
 const path = require('path')
 const fs = require('fs')
-const plugins = require('./plugins')
-const { masterToPDF } = require('./masterToPDF.js')
+const ReLaXed = require('./relaxed.js')
 global.program = require('commander')
 
 var input, output
@@ -23,7 +22,7 @@ program
   .option('-t, --temp [location]', 'Directory for temp file')
   .option('--bo, --build-once', 'Build once only, do not watch')
   .option('-l, --locals <json>', 'Json locals for pug rendering')
-  .option('-v, --values <value>',"value file")
+  .option('-v, --values <value>', "value file")
   .option('--basedir <location>', 'Base directory for absolute paths, e.g. /')
 
   .action(function (inp, out) {
@@ -91,28 +90,17 @@ if (program.locals) {
   }
 }
 
-if (program.values){
+if (program.values) {
   try {
     console.log(colors.magenta(`... Loading Value file ${program.values}`))
-    var data = fs.readFileSync(program.values,'utf8')
-    Object.assign(locals,yaml.safeLoad(data))
-  } catch (e){
+    var data = fs.readFileSync(program.values, 'utf8')
+    Object.assign(locals, yaml.safeLoad(data))
+  } catch (e) {
     console.error(e)
     colors.red(`Fail to read value file ${program.values}`)
   }
 }
 
-
-
-// Google Chrome headless configuration
-const puppeteerConfig = {
-  headless: true,
-  args: (program.sandbox ? ['--no-sandbox'] : []).concat([
-    '--disable-translate',
-    '--disable-extensions',
-    '--disable-sync'
-  ])
-}
 
 
 /*
@@ -121,57 +109,49 @@ const puppeteerConfig = {
  * ==============================================================
  */
 
-const relaxedGlobals = {
-  busy: false,
-  config: {},
-  configPlugins: [],
-  basedir: program.basedir || inputDir
-}
 
-var updateConfig = async function () {
+
+function loadConfig() {
+  let config = {}
   if (configPath) {
     console.log(colors.magenta('... Reading config file ' + configPath))
     var data = fs.readFileSync(configPath, 'utf8')
     if (configPath.endsWith('.json')) {
-      relaxedGlobals.config = JSON.parse(data)
+      config = JSON.parse(data)
     } else {
-      relaxedGlobals.config = yaml.safeLoad(data)
+      config = yaml.safeLoad(data)
     }
   }
-  await plugins.updateRegisteredPlugins(relaxedGlobals, inputDir)
+  return config
 }
 
 
 
-async function main () {
+async function main() {
   console.log(colors.magenta.bold('Launching ReLaXed...'))
 
   // LOAD BUILT-IN "ALWAYS-ON" PLUGINS
-  for (var [i, plugin] of plugins.builtinDefaultPlugins.entries()) {
-    plugins.builtinDefaultPlugins[i] = await plugin.constructor()
-  }
-  await updateConfig()
-  const browser = await puppeteer.launch(puppeteerConfig)
-  relaxedGlobals.puppeteerPage = await browser.newPage()
+  // await updateConfig()
+  let config = loadConfig();
 
-  relaxedGlobals.puppeteerPage.on('pageerror', function (err) {
-    console.log(colors.red('Page error: ' + err.toString()))
-  }).on('error', function (err) {
-    console.log(colors.red('Error: ' + err.toString()))
+  let relaxed = ReLaXed.build({
+    inputPath: inputPath,
+    inputDir: inputDir,
+    tempHTMLPath: tempHTMLPath,
+    outputPath: outputPath,
+    config: config,
   })
 
-  if(relaxedGlobals.config.view){
-    
-    var view = Object.assign({width: 800, height:600 },relaxedGlobals.config.view)
-    await relaxedGlobals.puppeteerPage.setViewport(view)
-  }
+  await relaxed.init()
 
-  await build(inputPath)
+  await relaxed.build(locals).catch((error)=> {
+    console.log(colors.red(error))
+  })
 
   if (program.buildOnce) {
     process.exit(0)
   } else {
-    watch()
+    watch(relaxed)
   }
 }
 
@@ -181,7 +161,7 @@ async function main () {
  * ==============================================================
  */
 
-async function build (filepath) {
+async function build(filepath) {
   var shortFileName = filepath.replace(inputDir, '')
   if ((path.basename(filepath) === 'config.yml') || (filepath.endsWith('.plugin.js'))) {
     await updateConfig()
@@ -237,17 +217,23 @@ async function build (filepath) {
  * ==============================================================
  */
 
-function watch () {
+function watch(relaxed) {
   console.log(colors.magenta(`\nNow idle and waiting for file changes.`))
   chokidar.watch(watchLocations, {
     awaitWriteFinish: {
       stabilityThreshold: 50,
       pollInterval: 100
     }
-  }).on('change', build)
+  }).on('change',(filepath) => {
+    var p = relaxed.fileChanged(filepath)
+    if(!p){
+      console.log(colors.magenta('... Rebuilding'))
+      relaxed.build(locals)
+    }
+  })
 }
 
-function autodetectMasterFile (input) {
+function autodetectMasterFile(input) {
   var dir = input || '.'
   var files = fs.readdirSync(dir).filter((name) => name.endsWith('.pug'))
   var filename
