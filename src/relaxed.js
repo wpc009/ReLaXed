@@ -4,7 +4,7 @@ const puppeteer = require('puppeteer')
 const colors = require('colors/safe')
 const path = require('path')
 
-exports.build = function(opts){
+exports.instance = function(opts){
   const puppeteerConfig = {
     headless: true,
     args: (opts.sandbox ? ['--no-sandbox','--disable-setuid-sandbox'] : []).concat([
@@ -22,7 +22,8 @@ exports.build = function(opts){
     busy: false,
     config: opts.config,
     configPlugins: [],
-    basedir: opts.basedir || opts.inputDir
+    basedir: opts.basedir || opts.inputDir,
+    tempDir: opts.tempDir,
   }
 
   async function init(){
@@ -45,15 +46,18 @@ exports.build = function(opts){
         await relaxedGlobals.puppeteerPage.setViewport(view)
       }
 
+
       await plugins.updateRegisteredPlugins(relaxedGlobals, opts.inputDir)
+      return this
   }
 
-  function build(locals){
+  function build(locals,outputPath){
     if (relaxedGlobals.busy) {
       return Promise.reject(new Error('puppeteer too busy'))
     }
     relaxedGlobals.busy = true
-    return masterToPDF(opts.inputPath, relaxedGlobals, opts.tempHTMLPath, opts.outputPath, locals)
+    let tempHTMLPath = path.join(opts.tempDir, path.basename(outputPath, path.extname(outputPath)) + '_temp.htm')
+    return masterToPDF(opts.inputPath, relaxedGlobals,tempHTMLPath, outputPath, locals)
     .then(()=> {
       relaxedGlobals.busy = false
       console.log(colors.magenta(`... Generating PDF finished, busy: ${relaxedGlobals.busy}`))

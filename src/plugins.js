@@ -115,7 +115,7 @@ var updateRegisteredPlugins = async function (relaxedGlobals, inputDir) {
           [pluginName, params] = Object.entries(pluginDefinition)[0]
         }
         console.log(colors.magenta(`    - ${pluginName} plugin`))
-        plugin = await createConfigPlugin(pluginName, params, inputDir)
+        plugin = await createConfigPlugin(pluginName, Object.assign({},relaxedGlobals,params), inputDir)
         relaxedGlobals.configPlugins.push(plugin)
       } catch (error) {
         console.log(error.message)

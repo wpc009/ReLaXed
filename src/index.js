@@ -134,17 +134,16 @@ async function main() {
   // await updateConfig()
   let config = loadConfig();
 
-  let relaxed = ReLaXed.build({
+  let relaxed = ReLaXed.instance({
     inputPath: inputPath,
     inputDir: inputDir,
-    tempHTMLPath: tempHTMLPath,
-    outputPath: outputPath,
+    tempDir: tempDir,
     config: config,
   })
 
   await relaxed.init()
 
-  await relaxed.build(locals).catch((error)=> {
+  await relaxed.build(locals,outputPath).catch((error)=> {
     console.log(colors.red(error))
   })
 
@@ -225,10 +224,14 @@ function watch(relaxed) {
       pollInterval: 100
     }
   }).on('change',(filepath) => {
+    if(path.resolve(filepath).startsWith(path.resolve(tempDir))){
+      console.log(colors.grey(`ignore file ${filepath} from temp dir`))
+      return
+    }
     var p = relaxed.fileChanged(filepath)
     if(!p){
       console.log(colors.magenta('... Rebuilding'))
-      relaxed.build(locals)
+      relaxed.build(locals,outputPath)
     }
   })
 }
