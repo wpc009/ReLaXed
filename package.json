@@ -1,5 +1,5 @@
 {
-  "name": "relaxedjs",
+  "name": "@maxtropy/relaxedjs",
   "version": "0.2.1",
   "description": "Create PDF documents using web technologies (PDF/SCSS)",
   "main": "src/index.js",
@@ -39,5 +39,19 @@
     "mocha": "^5.2.0",
     "pdf-image": "^2.0.0",
     "pixel-diff": "^1.0.1"
+  },
+  "directories": {
+    "doc": "docs",
+    "test": "test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/RelaxedJS/ReLaXed.git"
+  },
+  "bugs": {
+    "url": "https://github.com/RelaxedJS/ReLaXed/issues"
+  },
+  "publishConfig": {
+    "registry": "http://artifactory.segmetics.com/artifactory/api/npm/npm-maxtropy"
   }
 }
