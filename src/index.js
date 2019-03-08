@@ -134,12 +134,12 @@ async function main() {
   // await updateConfig()
   let config = loadConfig();
 
-  let relaxed = ReLaXed.instance({
+  let relaxed = ReLaXed.instance(Object.assign({
     inputPath: inputPath,
     inputDir: inputDir,
     tempDir: tempDir,
     config: config,
-  })
+  },program))
 
   await relaxed.init()
 

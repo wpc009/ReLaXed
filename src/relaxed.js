@@ -7,7 +7,7 @@ const path = require('path')
 exports.instance = function(opts){
   const puppeteerConfig = {
     headless: true,
-    args: (opts.sandbox ? ['--no-sandbox','--disable-setuid-sandbox'] : []).concat([
+    args: (opts.sandbox ? []:['--no-sandbox','--disable-setuid-sandbox']).concat([
       '--disable-gpu',
       '--hide-scrollbars',
       '--disable-translate',

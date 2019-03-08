@@ -39,6 +39,7 @@ exports.masterToPDF = async function (masterPath, relaxedGlobals, tempHTMLPath, 
     } catch (error) {
       console.log(error.message)
       console.error(colors.red('There was a Pug error (see above)'))
+      throw error
       return
     }
   } else if (masterPath.endsWith('.html')) {
@@ -71,7 +72,8 @@ exports.masterToPDF = async function (masterPath, relaxedGlobals, tempHTMLPath, 
    *            LOAD HTML
    */
   await page.goto('file:' + tempHTMLPath, {
-    waitUntil: ['load', 'domcontentloaded']
+    waitUntil: ['load', 'domcontentloaded'],
+    timeout: 300000,
   })
   var tLoad = performance.now()
   console.log(colors.magenta(`... Document loaded in ${((tLoad - tHTML) / 1000).toFixed(1)}s`))
