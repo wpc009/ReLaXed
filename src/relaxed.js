@@ -31,24 +31,26 @@ exports.instance = function(opts){
       for (var [i, plugin] of plugins.builtinDefaultPlugins.entries()) {
         plugins.builtinDefaultPlugins[i] = await plugin.constructor()
       }
-      const browser = await puppeteer.launch(puppeteerConfig)
-      relaxedGlobals.puppeteerPage = await browser.newPage()
-    
-      relaxedGlobals.puppeteerPage.on('pageerror', function (err) {
-        console.log(colors.red('Page error: ' + err.toString()))
-      }).on('error', function (err) {
-        console.log(colors.red('Error: ' + err.toString()))
-      })
-    
-      if(relaxedGlobals.config.view){
-        
-        var view = Object.assign({width: 800, height:600 },relaxedGlobals.config.view)
-        await relaxedGlobals.puppeteerPage.setViewport(view)
-      }
-
-
-      await plugins.updateRegisteredPlugins(relaxedGlobals, opts.inputDir)
-      return this
+      return puppeteer.launch(puppeteerConfig).then(browser =>{
+        return browser.newPage();
+      }).then(page =>{
+        relaxedGlobals.puppeteerPage = page
+        relaxedGlobals.puppeteerPage.on('pageerror', function (err) {
+          console.log(colors.red('Page error: ' + err.toString()))
+        }).on('error', function (err) {
+          console.log(colors.red('Error: ' + err.toString()))
+        })
+        if(relaxedGlobals.config.view){
+          var view = Object.assign({width: 800, height:600 },relaxedGlobals.config.view)
+          return relaxedGlobals.puppeteerPage.setViewport(view)
+        }else{
+          return page;
+        }
+      }).then(page => {
+        return plugins.updateRegisteredPlugins(relaxedGlobals, opts.inputDir);
+      }).then(_ => {
+        return this;
+      });
   }
 
   function build(locals,outputPath){
