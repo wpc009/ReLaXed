@@ -1,6 +1,6 @@
 {
   "name": "@maxtropy/relaxedjs",
-  "version": "0.2.4",
+  "version": "0.2.5",
   "description": "Create PDF documents using web technologies (PDF/SCSS)",
   "main": "src/index.js",
   "bin": {
