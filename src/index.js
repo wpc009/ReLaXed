@@ -41,6 +41,7 @@ if (!input || fs.lstatSync(input).isDirectory()) {
 const inputPath = path.resolve(input)
 const inputDir = path.resolve(inputPath, '..')
 const inputFilenameNoExt = path.basename(input, path.extname(input))
+const outputBaseName = path.basename(output,path.extname(output))
 
 var configPath
 for (var filename of ['config.yml', 'config.json']) {
@@ -55,7 +56,7 @@ for (var filename of ['config.yml', 'config.json']) {
 if (!output) {
   output = path.join(inputDir, inputFilenameNoExt + '.pdf')
 }
-const outputPath = path.resolve(output)
+const outputPath = path.dirname(path.resolve(output))
 
 var tempDir
 if (program.temp) {
@@ -72,7 +73,7 @@ if (program.temp) {
   tempDir = inputDir
 }
 
-const tempHTMLPath = path.join(tempDir, inputFilenameNoExt + '_temp.htm')
+const tempHTMLPath = path.join(tempDir, outputBaseName + '_temp.htm')
 
 // Default and additional watch locations
 let watchLocations = [inputDir]
@@ -143,7 +144,10 @@ async function main() {
 
   await relaxed.init()
 
-  await relaxed.build(locals,outputPath).catch((error)=> {
+  await relaxed.build(locals,{
+    outputPath: outputPath,
+    baseName: outputBaseName
+  }).catch((error)=> {
     console.log(colors.red(error))
   })
 
@@ -231,7 +235,10 @@ function watch(relaxed) {
     var p = relaxed.fileChanged(filepath)
     if(!p){
       console.log(colors.magenta('... Rebuilding'))
-      relaxed.build(locals,outputPath)
+      relaxed.build(locals,{
+        outputPath: outputPath,
+        baseName: outputBaseName
+      })
     }
   })
 }

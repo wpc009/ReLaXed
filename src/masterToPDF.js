@@ -5,8 +5,15 @@ const fs = require('fs')
 const filesize = require('filesize')
 const path = require('path')
 const { performance } = require('perf_hooks')
-
-exports.masterToPDF = async function (masterPath, relaxedGlobals, tempHTMLPath, outputPath, locals) {
+/**
+* buildOpts: {
+  baseName: name,
+  htmlFileName: htmlFileName
+  pdfFileName: pdfFileName
+  outputPath: relative path of output folder
+}
+ */
+exports.masterToPDF = async function (masterPath, relaxedGlobals, buildOpts, locals) {
   var t0 = performance.now()
   var page = relaxedGlobals.puppeteerPage
   /*
@@ -63,6 +70,7 @@ exports.masterToPDF = async function (masterPath, relaxedGlobals, tempHTMLPath, 
     html = await htmlModifier.instance(html)
   }
 
+  let tempHTMLPath = path.join(buildOpts.outputPath,buildOpts.htmlFileName || `${buildOpts.baseName}_temp.htm`)
   fs.writeFileSync(tempHTMLPath, html)
 
   var tHTML = performance.now()
@@ -71,7 +79,9 @@ exports.masterToPDF = async function (masterPath, relaxedGlobals, tempHTMLPath, 
   /*
    *            LOAD HTML
    */
-  await page.goto('file:' + tempHTMLPath, {
+  var url = relaxedGlobals.baseUrl + "/" + tempHTMLPath
+  console.log(`...url ${url}`)
+  await page.goto(url, {
     waitUntil: ['load', 'domcontentloaded'],
     timeout: 300000,
   })
@@ -97,8 +107,9 @@ exports.masterToPDF = async function (masterPath, relaxedGlobals, tempHTMLPath, 
   /*
    *            Create PDF options
    */
+  let pdfFilePath = path.join(buildOpts.outputPath,buildOpts.pdfFileName || `${buildOpts.baseName}.pdf` )
   var options = {
-    path: outputPath,
+    path: pdfFilePath,
     displayHeaderFooter: !!(header || footer),
     headerTemplate: header,
     footerTemplate: footer,
@@ -148,7 +159,7 @@ exports.masterToPDF = async function (masterPath, relaxedGlobals, tempHTMLPath, 
 
   var tPDF = performance.now()
   let duration = ((tPDF - tNetwork) / 1000).toFixed(1)
-  let pdfSize = filesize(fs.statSync(outputPath).size)
+  let pdfSize = filesize(fs.statSync(pdfFilePath).size)
   console.log(colors.magenta(`... PDF written in ${duration}s (${pdfSize})`))
 }
 

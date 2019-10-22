@@ -24,6 +24,7 @@ exports.instance = function(opts){
     configPlugins: [],
     basedir: opts.basedir || opts.inputDir,
     tempDir: opts.tempDir,
+    baseUrl: opts.baseUrl || "file://",
   }
 
   async function init(){
@@ -53,13 +54,12 @@ exports.instance = function(opts){
       });
   }
 
-  function build(locals,outputPath){
+  function build(locals,buildOpts){
     if (relaxedGlobals.busy) {
       return Promise.reject(new Error('puppeteer too busy'))
     }
     relaxedGlobals.busy = true
-    let tempHTMLPath = path.join(opts.tempDir, path.basename(outputPath, path.extname(outputPath)) + '_temp.htm')
-    return masterToPDF(opts.inputPath, relaxedGlobals,tempHTMLPath, outputPath, locals)
+    return masterToPDF(opts.inputPath, relaxedGlobals,buildOpts, locals)
     .then(()=> {
       relaxedGlobals.busy = false
       console.log(colors.magenta(`... Generating PDF finished, busy: ${relaxedGlobals.busy}`))
