@@ -56,7 +56,6 @@ for (var filename of ['config.yml', 'config.json']) {
 if (!output) {
   output = path.join(inputDir, inputFilenameNoExt + '.pdf')
 }
-const outputPath = path.dirname(path.resolve(output))
 
 var tempDir
 if (program.temp) {
@@ -72,6 +71,8 @@ if (program.temp) {
 } else {
   tempDir = inputDir
 }
+const outputPath = path.relative(process.cwd(),tempDir)
+
 
 const tempHTMLPath = path.join(tempDir, outputBaseName + '_temp.htm')
 
@@ -140,6 +141,7 @@ async function main() {
     inputDir: inputDir,
     tempDir: tempDir,
     config: config,
+    baseUrl: `http://localhost:8080`
   },program))
 
   await relaxed.init()
